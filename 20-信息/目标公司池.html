@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI 目标公司池</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@500;600;700&family=Fira+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --color-primary: #0D9488;
+      --color-on-primary: #FFFFFF;
+      --color-secondary: #14B8A6;
+      --color-accent: #EA580C;
+      --color-background: #F0FDFA;
+      --color-foreground: #134E4A;
+      --color-muted: #CCFBF1;
+      --color-surface: #FFFFFF;
+      --color-border: #99F6E4;
+      --color-subtle: #5F8F8A;
+      --tier-a: #0D9488;
+      --tier-b: #0F766E;
+      --tier-c: #64748B;
+      --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+      --ease-hover: cubic-bezier(0.25, 0.1, 0.25, 1);
+      --dur-enter: 240ms;
+      --dur-filter-out: 120ms;
+      --dur-filter-in: 160ms;
+      --dur-hover: 120ms;
+      --stagger: 45ms;
+      --space: 16px;
+      --radius: 4px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: "Fira Sans", sans-serif;
+      background:
+        radial-gradient(1200px 600px at 10% -10%, #ccfbf1 0%, transparent 55%),
+        radial-gradient(900px 500px at 100% 0%, #fff7ed 0%, transparent 45%),
+        var(--color-background);
+      color: var(--color-foreground);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    .wrap {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 40px 20px 80px;
+    }
+
+    .brand {
+      font-family: "Fira Code", monospace;
+      font-size: clamp(2rem, 4vw, 2.75rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin: 0 0 8px;
+      line-height: 1.15;
+    }
+
+    .lede {
+      margin: 0 0 28px;
+      max-width: 40rem;
+      color: var(--color-subtle);
+      font-size: 1.05rem;
+    }
+
+    .meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 18px;
+      margin-bottom: 28px;
+      font-size: 0.875rem;
+      color: var(--color-subtle);
+    }
+    .meta-row strong { color: var(--color-foreground); font-weight: 600; }
+
+    .toolbar {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 24px;
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      padding: 12px 0;
+      background: color-mix(in srgb, var(--color-background) 88%, transparent);
+      backdrop-filter: blur(8px);
+    }
+
+    .search {
+      width: 100%;
+      border: 2px solid var(--color-border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      font: 500 1rem/1.3 "Fira Sans", sans-serif;
+      color: var(--color-foreground);
+      background: var(--color-surface);
+      outline: none;
+    }
+    .search:focus {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 25%, transparent);
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chip {
+      appearance: none;
+      border: 1.5px solid var(--color-border);
+      background: var(--color-surface);
+      color: var(--color-foreground);
+      border-radius: 999px;
+      padding: 8px 14px;
+      min-height: 44px;
+      font: 500 0.875rem/1 "Fira Sans", sans-serif;
+      cursor: pointer;
+      transition: transform 160ms var(--ease-out), background-color 120ms var(--ease-hover), border-color 120ms var(--ease-hover), color 120ms var(--ease-hover);
+    }
+    .chip:hover { border-color: var(--color-primary); }
+    .chip:active { transform: scale(0.97); }
+    .chip[aria-pressed="true"] {
+      background: var(--color-primary);
+      border-color: var(--color-primary);
+      color: var(--color-on-primary);
+    }
+    .chip:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+    .stat {
+      background: var(--color-surface);
+      border: 1.5px solid var(--color-border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+    }
+    .stat .n {
+      font-family: "Fira Code", monospace;
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--color-primary);
+    }
+    .stat .l { font-size: 0.8rem; color: var(--color-subtle); margin-top: 2px; }
+
+    .section-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 32px 0 12px;
+    }
+    .section-head h2 {
+      margin: 0;
+      font-family: "Fira Code", monospace;
+      font-size: 1.15rem;
+      font-weight: 600;
+    }
+    .section-head span {
+      font-size: 0.8rem;
+      color: var(--color-subtle);
+    }
+
+    .company-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 12px;
+      transition: opacity var(--dur-filter-in) var(--ease-out);
+    }
+    .company-grid.is-exiting {
+      opacity: 0;
+      transition-duration: var(--dur-filter-out);
+      pointer-events: none;
+    }
+    .company-grid.is-entering { opacity: 0; }
+    .company-grid.is-entering.is-shown { opacity: 1; }
+
+    .company-card {
+      background: var(--color-surface);
+      border: 1.5px solid var(--color-border);
+      border-radius: var(--radius);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      opacity: 0;
+      transform: translateY(10px);
+      min-height: 168px;
+    }
+    body.is-ready .company-card {
+      animation: card-enter var(--dur-enter) var(--ease-out) forwards;
+    }
+    body.is-ready .company-card:nth-child(1) { animation-delay: calc(0 * var(--stagger)); }
+    body.is-ready .company-card:nth-child(2) { animation-delay: calc(1 * var(--stagger)); }
+    body.is-ready .company-card:nth-child(3) { animation-delay: calc(2 * var(--stagger)); }
+    body.is-ready .company-card:nth-child(4) { animation-delay: calc(3 * var(--stagger)); }
+    body.is-ready .company-card:nth-child(5) { animation-delay: calc(4 * var(--stagger)); }
+    body.is-ready .company-card:nth-child(6) { animation-delay: calc(5 * var(--stagger)); }
+    body.is-ready .company-card:nth-child(7) { animation-delay: calc(6 * var(--stagger)); }
+    body.is-ready .company-card:nth-child(n+8) { animation-delay: calc(7 * var(--stagger)); }
+
+    @keyframes card-enter {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      .company-card {
+        transition:
+          transform var(--dur-hover) var(--ease-hover),
+          border-color var(--dur-hover) var(--ease-hover),
+          background-color var(--dur-hover) var(--ease-hover);
+      }
+      .company-card:hover {
+        transform: translateY(-2px);
+        border-color: var(--color-primary);
+        background: color-mix(in srgb, var(--color-primary) 4%, var(--color-surface));
+      }
+    }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .name {
+      font-family: "Fira Code", monospace;
+      font-weight: 600;
+      font-size: 1.05rem;
+      margin: 0;
+    }
+    .badge {
+      flex-shrink: 0;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      padding: 4px 8px;
+      border-radius: 3px;
+      color: #fff;
+      background: var(--tier-c);
+    }
+    .badge.a { background: var(--tier-a); }
+    .badge.b { background: var(--tier-b); }
+    .badge.c { background: var(--tier-c); }
+
+    .track {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--color-primary);
+      background: var(--color-muted);
+      padding: 3px 8px;
+      border-radius: 3px;
+    }
+    .product { margin: 0; font-size: 0.9rem; font-weight: 500; }
+    .why { margin: 0; font-size: 0.85rem; color: var(--color-subtle); flex: 1; }
+    .status {
+      margin: 0;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--color-accent);
+    }
+
+    .empty {
+      display: none;
+      padding: 40px 16px;
+      text-align: center;
+      color: var(--color-subtle);
+      border: 1.5px dashed var(--color-border);
+      border-radius: var(--radius);
+      background: color-mix(in srgb, var(--color-surface) 70%, transparent);
+    }
+    .empty.show { display: block; }
+
+    .notes {
+      margin-top: 48px;
+      padding-top: 24px;
+      border-top: 1.5px solid var(--color-border);
+    }
+    .notes h2 {
+      font-family: "Fira Code", monospace;
+      font-size: 1.1rem;
+      margin: 0 0 12px;
+    }
+    .notes ul {
+      margin: 0;
+      padding-left: 1.2rem;
+      color: var(--color-subtle);
+      font-size: 0.92rem;
+    }
+    .notes li { margin-bottom: 6px; }
+    .notes a { color: var(--color-primary); }
+
+    @media (max-width: 720px) {
+      .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .wrap { padding: 28px 16px 64px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      body.is-ready .company-card {
+        animation: none;
+        opacity: 1;
+        transform: none;
+      }
+      .company-grid { transition: opacity 80ms linear; }
+      .company-card, .chip { transition: none !important; }
+      .company-card:hover, .chip:active { transform: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1 class="brand">AI 目标公司池</h1>
+      <p class="lede">四条优先赛道的可投公司目录。按 A/B/C 分层浏览，筛选赛道后直接打开官网或对照 Markdown 深挖。</p>
+      <div class="meta-row">
+        <span>最近扫描 <strong id="scan-date">2026-08-15</strong></span>
+        <span>源文件 <strong>20-信息/目标公司池.md</strong></span>
+      </div>
+    </header>
+
+    <div class="toolbar" role="search">
+      <label class="visually-hidden" for="q" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">搜索公司</label>
+      <input id="q" class="search" type="search" placeholder="搜索公司、产品或关键词…" autocomplete="off" />
+      <div class="chips" role="group" aria-label="赛道筛选">
+        <button type="button" class="chip" data-track="all" aria-pressed="true">全部赛道</button>
+        <button type="button" class="chip" data-track="coding" aria-pressed="false">Coding / 研发</button>
+        <button type="button" class="chip" data-track="office" aria-pressed="false">办公效率</button>
+        <button type="button" class="chip" data-track="sales" aria-pressed="false">客服销售</button>
+        <button type="button" class="chip" data-track="ecom" aria-pressed="false">电商运营</button>
+      </div>
+      <div class="chips" role="group" aria-label="分层筛选">
+        <button type="button" class="chip" data-tier="all" aria-pressed="true">全部层级</button>
+        <button type="button" class="chip" data-tier="a" aria-pressed="false">A 精投</button>
+        <button type="button" class="chip" data-tier="b" aria-pressed="false">B 正常投</button>
+        <button type="button" class="chip" data-tier="c" aria-pressed="false">C 观察</button>
+      </div>
+    </div>
+
+    <div class="stats" aria-live="polite">
+      <div class="stat"><div class="n" id="n-total">0</div><div class="l">当前可见</div></div>
+      <div class="stat"><div class="n" id="n-a">0</div><div class="l">A 层</div></div>
+      <div class="stat"><div class="n" id="n-b">0</div><div class="l">B 层</div></div>
+      <div class="stat"><div class="n" id="n-c">0</div><div class="l">C 层</div></div>
+    </div>
+
+    <div class="section-head">
+      <h2>公司卡片</h2>
+      <span id="result-hint">加载中</span>
+    </div>
+    <div id="grid" class="company-grid" aria-live="polite"></div>
+    <div id="empty" class="empty" role="status">没有匹配的公司。换个赛道或清空搜索试试。</div>
+
+    <section class="notes">
+      <h2>本周扫描要点</h2>
+      <ul>
+        <li>Coding：Trae / Qoder / CodeBuddy 等大厂产品线占主导；创业侧需再验证是否招 PM。</li>
+        <li>办公：金山灵犀 + WPS Comate；千问办公 / 飞书 Aily 仍是生态入口。</li>
+        <li>客服销售：销售易 NeoAgent、纷享销客 ShareAgent；驯鹿 / 微链 / 智简有新信号。</li>
+        <li>电商：淘天生意管家、晓多语流、数势 Data Agent。</li>
+        <li>完整表格与变更日志见 <a href="./目标公司池.md">目标公司池.md</a>。</li>
+      </ul>
+    </section>
+  </div>
+
+  <script>
+    const COMPANIES = [
+      { name: "阿里巴巴", tier: "a", tracks: ["office", "coding"], trackLabel: "办公 / Coding", product: "千问办公 · Qoder", why: "办公 Agent 头部；已有定制简历", status: "简历已备", match: "CRM+方案叙事" },
+      { name: "销售易", tier: "a", tracks: ["sales"], trackLabel: "客服销售", product: "NeoAgent 2.0", why: "Agentic CRM 头部；腾讯生态", status: "待查岗", match: "线索/商机" },
+      { name: "纷享销客", tier: "a", tracks: ["sales"], trackLabel: "客服销售", product: "ShareAgent / 蜂巢", why: "CRM 份额领先；AI 原生", status: "待查岗", match: "销售全链路" },
+      { name: "淘天集团", tier: "a", tracks: ["ecom"], trackLabel: "电商运营", product: "AI 生意管家", why: "平台原生经营 Agent", status: "待查岗", match: "商家经营" },
+      { name: "金山办公", tier: "a", tracks: ["office"], trackLabel: "办公效率", product: "灵犀 / WPS Comate", why: "文档交付垂类头部", status: "待查岗", match: "办公产物闭环" },
+      { name: "字节跳动", tier: "b", tracks: ["coding", "office"], trackLabel: "Coding / 办公", product: "Trae · 扣子 · 飞书 Aily", why: "产品强；需核验团队节奏", status: "观察", match: "Agent 产品线" },
+      { name: "网易七鱼", tier: "b", tracks: ["sales"], trackLabel: "客服销售", product: "客服/销售 Agent", why: "全渠道成熟；核验交付占比", status: "待查岗", match: "销服一体" },
+      { name: "晓多科技", tier: "b", tracks: ["ecom", "sales"], trackLabel: "电商 / 客服", product: "语流 Agent", why: "电商客服垂类头部", status: "待查岗", match: "多 Agent 协同" },
+      { name: "乐言", tier: "b", tracks: ["ecom", "sales"], trackLabel: "电商 / 客服", product: "电商机器人", why: "电商垂类", status: "待查岗", match: "商家服务" },
+      { name: "秘塔科技", tier: "b", tracks: ["office"], trackLabel: "办公效率", product: "秘塔搜索 / 写作", why: "小团队；节奏相对可谈", status: "待查岗", match: "研究助手" },
+      { name: "腾讯", tier: "b", tracks: ["office", "coding"], trackLabel: "办公 / Coding", product: "WorkBuddy · CodeBuddy", why: "生态强；部门差异大", status: "观察", match: "企微协同" },
+      { name: "百度", tier: "b", tracks: ["coding", "office"], trackLabel: "Coding / 办公", product: "文心快码 · 搭子", why: "综合厂产品线", status: "观察", match: "办公+编程" },
+      { name: "Cursor", tier: "c", tracks: ["coding"], trackLabel: "Coding", product: "Cursor IDE", why: "全球标杆；国内社招难", status: "观察", match: "对标产品" },
+      { name: "DeepSeek", tier: "c", tracks: ["coding"], trackLabel: "Coding", product: "Coder / Agent", why: "研究向；节奏很强", status: "谨慎", match: "模型+工具" },
+      { name: "智谱", tier: "c", tracks: ["coding", "office"], trackLabel: "Coding / 办公", product: "CodeGeeX · 企业 Agent", why: "可谈但核验组", status: "观察", match: "ToB Agent" },
+      { name: "环信 / 智齿等", tier: "c", tracks: ["sales"], trackLabel: "客服销售", product: "全渠道客服 SaaS", why: "易偏交付，默认降权倾向", status: "观察", match: "联络中心" },
+      { name: "容联七陌", tier: "c", tracks: ["sales"], trackLabel: "客服销售", product: "智能外呼", why: "与线索清洗文章同赛道", status: "观察", match: "外呼清洗" },
+      { name: "数势科技", tier: "c", tracks: ["ecom"], trackLabel: "电商运营", product: "SwiftAgent", why: "经营问数 / Data Agent", status: "观察", match: "指标决策" },
+      { name: "驯鹿 AI", tier: "c", tracks: ["sales"], trackLabel: "客服销售", product: "销售客服机器人", why: "跨境；融资活跃", status: "观察", match: "全机器人替代" },
+      { name: "微链智能", tier: "c", tracks: ["sales", "ecom"], trackLabel: "客服 / 电商", product: "视觉售后技术客服", why: "天使轮；垂类新锐", status: "观察", match: "售后诊断" },
+      { name: "智简未来", tier: "c", tracks: ["sales", "ecom"], trackLabel: "客服 / 电商", product: "智言 AI 客服", why: "天使轮；电商客服", status: "观察", match: "导购转化" }
+    ];
+
+    const grid = document.getElementById("grid");
+    const empty = document.getElementById("empty");
+    const q = document.getElementById("q");
+    let track = "all";
+    let tier = "all";
+    let filterTimer = null;
+    let firstPaint = true;
+
+    function tierLabel(t) {
+      return ({ a: "A", b: "B", c: "C" })[t] || t.toUpperCase();
+    }
+
+    function cardHTML(c) {
+      return `<article class="company-card" data-tier="${c.tier}" data-tracks="${c.tracks.join(",")}">
+        <div class="card-top">
+          <h3 class="name">${c.name}</h3>
+          <span class="badge ${c.tier}" aria-label="${tierLabel(c.tier)} 层">${tierLabel(c.tier)}</span>
+        </div>
+        <span class="track">${c.trackLabel}</span>
+        <p class="product">${c.product}</p>
+        <p class="why">${c.why}</p>
+        <p class="status">${c.status} · ${c.match}</p>
+      </article>`;
+    }
+
+    function filtered() {
+      const query = q.value.trim().toLowerCase();
+      return COMPANIES.filter((c) => {
+        if (track !== "all" && !c.tracks.includes(track)) return false;
+        if (tier !== "all" && c.tier !== tier) return false;
+        if (!query) return true;
+        const hay = [c.name, c.product, c.why, c.trackLabel, c.match, c.status].join(" ").toLowerCase();
+        return hay.includes(query);
+      });
+    }
+
+    function updateStats(list) {
+      document.getElementById("n-total").textContent = String(list.length);
+      document.getElementById("n-a").textContent = String(list.filter((c) => c.tier === "a").length);
+      document.getElementById("n-b").textContent = String(list.filter((c) => c.tier === "b").length);
+      document.getElementById("n-c").textContent = String(list.filter((c) => c.tier === "c").length);
+      document.getElementById("result-hint").textContent = list.length ? `${list.length} 家公司` : "无结果";
+    }
+
+    function render(list, { animateFilter } = { animateFilter: false }) {
+      const paint = () => {
+        grid.innerHTML = list.map(cardHTML).join("");
+        empty.classList.toggle("show", list.length === 0);
+        updateStats(list);
+        if (firstPaint) {
+          requestAnimationFrame(() => document.body.classList.add("is-ready"));
+          firstPaint = false;
+        }
+      };
+
+      if (!animateFilter || firstPaint) {
+        paint();
+        return;
+      }
+
+      grid.classList.add("is-exiting");
+      clearTimeout(filterTimer);
+      filterTimer = setTimeout(() => {
+        grid.classList.remove("is-exiting");
+        grid.classList.add("is-entering");
+        paint();
+        requestAnimationFrame(() => {
+          grid.classList.add("is-shown");
+          setTimeout(() => {
+            grid.classList.remove("is-entering", "is-shown");
+          }, 160);
+        });
+      }, 120);
+    }
+
+    function apply(animateFilter) {
+      render(filtered(), { animateFilter });
+    }
+
+    document.querySelectorAll("[data-track]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("[data-track]").forEach((b) => b.setAttribute("aria-pressed", "false"));
+        btn.setAttribute("aria-pressed", "true");
+        track = btn.dataset.track;
+        apply(true);
+      });
+    });
+
+    document.querySelectorAll("[data-tier]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("[data-tier]").forEach((b) => b.setAttribute("aria-pressed", "false"));
+        btn.setAttribute("aria-pressed", "true");
+        tier = btn.dataset.tier;
+        apply(true);
+      });
+    });
+
+    q.addEventListener("input", () => apply(true));
+    apply(false);
+  </script>
+</body>
+</html>
